@@ -5,7 +5,8 @@
 from datetime import datetime
 import urllib.request
 import basc_py4chan
-import argparse  
+import argparse
+import shutil
 import timeit
 import json
 import csv 
@@ -84,6 +85,19 @@ def mkdir(path, mode):
         if args.debug:
             print(f'Failed to create directory {path}.\n')
 
+def archive_data(board_name, board_name_dir):
+    """Compress data to .zip and remove original folder"""
+    try:
+        if args.debug:
+            print('\nCompressing Data...')
+        shutil.make_archive(f'{board.name} - {datetime.now().strftime("%b-%d-%Y  %H-%M-%S")}', 'zip', f'{board_name_dir}')
+        shutil.rmtree(f'{board_name_dir}')
+        if args.debug:
+            print('Data compressed!')
+    except Exception as e:
+        if args.debug:
+            print('Error compressing data.\n')
+
 def write_comments_csv(post, filepath):
     """Create CSV and writes 4Chan comments and replies to it"""
     comment = post.text_comment.encode('utf-8').decode('utf-8')
@@ -99,7 +113,7 @@ def write_comments_csv(post, filepath):
 #TODO: 
     # Multithread --> not too important rn
     # Update a thread folder if new data is there ---> important
-    #possible bugs with duplicate folders?
+    # possible bugs with duplicate folders?
 
 if __name__ == "__main__":
     #Parse CLI for Board Name / Toggle Debugging
@@ -171,6 +185,9 @@ if __name__ == "__main__":
                     if post.has_file:
                         write_file_data(post, f'{thread_id_dir}/{thread_id} - file metadata.txt')
                         download_file(post, post.file_url, f'{images_dir}' + post.filename)
+    
+    #Zip up and remove board name folder
+    archive_data(board.name, board_name_dir)
     
     #Finish scraping / end runtime execution timer
     end = timeit.default_timer()
