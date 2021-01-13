@@ -104,7 +104,7 @@ if __name__ == "__main__":
     #Parse CLI for Board Name / Toggle Debugging
     parser = argparse.ArgumentParser()
     parser.add_argument("--board_name", type = str, help = "4Chan Board Name", required = True, default = 'pol')
-    parser.add_argument("--num_threads", type = int, help = "Number of threads to scrape on 4Chan Board", required = True, choices = range(1, 202), default = 5)
+    parser.add_argument("--num_threads", type = int, help = "Number of threads to scrape on 4Chan Board", required = True, choices = range(1, 203), default = 5)
     parser.add_argument("--debug", type = bool, help = "Turn debugging on", required = False, default = False)
     args = parser.parse_args()
 
@@ -137,7 +137,8 @@ if __name__ == "__main__":
             thread = board.get_thread(thread_id)
 
             #Defining additional file structure paths
-            subject = thread.posts[0].subject
+            if thread.posts != None:
+                subject = thread.posts[0].subject
             if args.debug:
                 print(subject)
             if subject != None:
@@ -159,15 +160,16 @@ if __name__ == "__main__":
             write_thread_data(thread, f'{thread_id_dir}/{thread_id} - thread metadata.txt')
 
             #Post Information
-            for post in thread.posts:
+            if thread.posts != None:
+                for post in thread.posts:
 
-                #Write comments and replies to CSV file
-                write_comments_csv(post, f'{thread_id_dir}/{thread_id} - comments & replies.csv')
+                    #Write comments and replies to CSV file
+                    write_comments_csv(post, f'{thread_id_dir}/{thread_id} - comments & replies.csv')
 
-                #Write file metadata to .txt
-                if post.has_file:
-                    write_file_data(post, f'{thread_id_dir}/{thread_id} - file metadata.txt')
-                    download_file(post, post.file_url, f'{images_dir}' + post.filename)
+                    #Write file metadata to .txt
+                    if post.has_file:
+                        write_file_data(post, f'{thread_id_dir}/{thread_id} - file metadata.txt')
+                        download_file(post, post.file_url, f'{images_dir}' + post.filename)
     
     #Finish scraping / end runtime execution timer
     end = timeit.default_timer()
