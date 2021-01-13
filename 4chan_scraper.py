@@ -108,7 +108,7 @@ def write_comments_csv(post, filepath):
         writer.writerow([post.post_id, post.datetime.strftime("%b-%d-%Y, %H:%M:%S"), post.subject if post.subject != None else 'No Subject',
         '(REPLY) ' + comment if ">>" in comment and not(post.is_op) else comment, post.name.encode('utf-8').decode('utf-8') if post.name != None else 'No Name', 
         post.is_op, post.semantic_url])
-    f.close()   
+    f.close() 
                          
 #TODO: 
     # Multithread --> not too important rn
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     #Parse CLI for Board Name / Toggle Debugging
     parser = argparse.ArgumentParser()
     parser.add_argument("--board_name", type = str, help = "4Chan Board Name", required = True, default = 'pol')
-    parser.add_argument("--num_threads", type = int, help = "Number of threads to scrape on 4Chan Board", required = True, choices = range(1, 203), default = 5)
+    parser.add_argument("--num_threads", type = int, help = "Number of threads to scrape on 4Chan Board", required = True, default = 10)
     parser.add_argument("--debug", type = bool, help = "Turn debugging on", required = False, default = False)
     args = parser.parse_args()
 
@@ -127,13 +127,15 @@ if __name__ == "__main__":
     board, all_thread_ids, board_metadata = get_board_info(args.board_name)
     print(f'\nBeginning 4Chan Catalog Scrape on /{board.name}/', '\n---------------------------------------')
     print('Current Date and Time:', datetime.now().strftime("%b-%d-%Y, %H:%M:%S"))
-    #Parse again for number of threads to scrape
 
     #Defining file structure paths
     board_name_dir = f'{board.name}/'
 
     #Print Board Information
     print(board_metadata)
+    if args.num_threads and (args.num_threads <= 0 or args.num_threads > len(all_thread_ids)):
+        parser.error(f"Number of threads not in range: {[1, len(all_thread_ids)]}\n")
+   
     print('Processing...\n')
 
     if args.debug:
