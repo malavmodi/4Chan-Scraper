@@ -97,8 +97,9 @@ def write_comments_csv(post, filepath):
     f.close()   
                          
 #TODO: 
-    # Compartmentalize by thread --> (file structuring) --> IMPORTANT
-    # Checking for duplicates, etc ---> IMPORTANT
+    # Multithread --> not too important rn
+    # Update a thread folder if new data is there ---> important
+    #possible bugs with duplicate folders?
 
 if __name__ == "__main__":
     #Parse CLI for Board Name / Toggle Debugging
@@ -139,14 +140,14 @@ if __name__ == "__main__":
             #Defining additional file structure paths
             if thread.posts != None:
                 subject = thread.posts[0].subject
-            if args.debug:
-                print(subject)
-            if subject != None:
-                thread_id_dir = f'{board.name}/{thread_id} - {make_safe_filename(subject)}'
-            else:
-                thread_id_dir = f'{board.name}/{thread_id} - No Subject'
-            
-            images_dir = f'{thread_id_dir}/{thread_id} files/'
+                if args.debug:
+                    print(subject)
+                if subject != None:
+                    thread_id_dir = f'{board.name}/{thread_id} - {make_safe_filename(subject)}'
+                else:
+                    thread_id_dir = f'{board.name}/{thread_id} - No Subject'
+                
+                images_dir = f'{thread_id_dir}/{thread_id} files/'
 
             #Create directory structure for thread
             mkdir(thread_id_dir, 0o0666)
