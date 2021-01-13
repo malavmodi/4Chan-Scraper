@@ -124,73 +124,78 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     #Get Board Information and Begin Scrape
-    board, all_thread_ids, board_metadata = get_board_info(args.board_name)
-    print(f'\nBeginning 4Chan Catalog Scrape on /{board.name}/', '\n---------------------------------------')
-    print('Current Date and Time:', datetime.now().strftime("%b-%d-%Y, %H:%M:%S"))
+    try:
+        board, all_thread_ids, board_metadata = get_board_info(args.board_name)
+        print(f'\nBeginning 4Chan Catalog Scrape on /{board.name}/', '\n---------------------------------------')
+        print('Current Date and Time:', datetime.now().strftime("%b-%d-%Y, %H:%M:%S"))
 
-    #Defining file structure paths
-    board_name_dir = f'{board.name}/'
+        #Defining file structure paths
+        board_name_dir = f'{board.name}/'
 
-    #Print Board Information
-    print(board_metadata)
-    if args.num_threads and (args.num_threads <= 0 or args.num_threads > len(all_thread_ids)):
-        parser.error(f"Number of threads not in range: {[1, len(all_thread_ids)]}\n")
-   
-    print('Processing...\n')
+        #Print Board Information
+        print(board_metadata)
+        if args.num_threads and (args.num_threads <= 0 or args.num_threads > len(all_thread_ids)):
+            parser.error(f"Number of threads not in range: {[1, len(all_thread_ids)]}\n")
+    
+        print('Processing...\n')
 
-    if args.debug:
-        print('Subject Names Scraped:\n', '-------------------------')
+        if args.debug:
+            print('Subject Names Scraped:\n', '-------------------------')
 
-    #Start runtime execution timer
-    start = timeit.default_timer()
+        #Start runtime execution timer
+        start = timeit.default_timer()
 
-    #Create directory for board name
-    mkdir(board_name_dir, 0o0666)
+        #Create directory for board name
+        mkdir(board_name_dir, 0o0666)
 
-    #Check if a given thread is not 404'd
-    if board.thread_exists:
-        #Loop for each thread in the thread ID list
-        for thread_id in all_thread_ids[0: args.num_threads]:       
-            thread = board.get_thread(thread_id)
+        #Check if a given thread is not 404'd
+        if board.thread_exists:
+            #Loop for each thread in the thread ID list
+            for thread_id in all_thread_ids[0: args.num_threads]:       
+                thread = board.get_thread(thread_id)
 
-            #Defining additional file structure paths
-            if thread.posts != None:
-                subject = thread.posts[0].subject
-                if args.debug:
-                    print(subject)
-                if subject != None:
-                    thread_id_dir = f'{board.name}/{thread_id} - {make_safe_filename(subject)}'
-                else:
-                    thread_id_dir = f'{board.name}/{thread_id} - No Subject'
+                #Defining additional file structure paths
+                if thread.posts != None:
+                    subject = thread.posts[0].subject
+                    if args.debug:
+                        print(subject if subject != None else 'No Subject')
+                    if subject != None:
+                        thread_id_dir = f'{board.name}/{thread_id} - {make_safe_filename(subject)}'
+                    else:
+                        thread_id_dir = f'{board.name}/{thread_id} - No Subject'
+                    
+                    images_dir = f'{thread_id_dir}/{thread_id} files/'
+
+                #Create directory structure for thread
+                mkdir(thread_id_dir, 0o0666)
+                mkdir(images_dir, 0o0666)  
+                            
+                # Download JSON for thread via catalog URL
+                json_url = basc_py4chan.Url(args.board_name).thread_api_url(thread_id)
+                download_json_thread(f'{thread_id_dir}/{thread_id}.json', json_url)            
                 
-                images_dir = f'{thread_id_dir}/{thread_id} files/'
+                # Write thread information to .txt
+                write_thread_data(thread, f'{thread_id_dir}/{thread_id} - thread metadata.txt')
 
-            #Create directory structure for thread
-            mkdir(thread_id_dir, 0o0666)
-            mkdir(images_dir, 0o0666)  
-                        
-            # Download JSON for thread via catalog URL
-            json_url = basc_py4chan.Url(args.board_name).thread_api_url(thread_id)
-            download_json_thread(f'{thread_id_dir}/{thread_id}.json', json_url)            
-            
-            # Write thread information to .txt
-            write_thread_data(thread, f'{thread_id_dir}/{thread_id} - thread metadata.txt')
+                #Post Information
+                if thread.posts != None:
+                    for post in thread.posts:
 
-            #Post Information
-            if thread.posts != None:
-                for post in thread.posts:
+                        #Write comments and replies to CSV file
+                        write_comments_csv(post, f'{thread_id_dir}/{thread_id} - comments & replies.csv')
 
-                    #Write comments and replies to CSV file
-                    write_comments_csv(post, f'{thread_id_dir}/{thread_id} - comments & replies.csv')
-
-                    #Write file metadata to .txt
-                    if post.has_file:
-                        write_file_data(post, f'{thread_id_dir}/{thread_id} - file metadata.txt')
-                        download_file(post, post.file_url, f'{images_dir}' + post.filename)
-    
-    #Zip up and remove board name folder
-    archive_data(board.name, board_name_dir)
-    
+                        #Write file metadata to .txt
+                        if post.has_file:
+                            write_file_data(post, f'{thread_id_dir}/{thread_id} - file metadata.txt')
+                            download_file(post, post.file_url, f'{images_dir}' + post.filename)
+        
+        #Zip up and remove board name folder
+        archive_data(board.name, board_name_dir)
+    except (Exception, KeyboardInterrupt):
+        print(f'An error occurred. Deleting /{board.name}/ folder in {os.getcwd()}.')
+        shutil.rmtree(f'{board_name_dir}')
+        exit(f'{board.name} successfully removed! Please rerun again!')
+ 
     #Finish scraping / end runtime execution timer
     end = timeit.default_timer()
     print('\nScraping Complete!')
