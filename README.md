@@ -10,12 +10,14 @@ Commands:
 ---------
 **--board_name**: Board from 4Chan to Scrape (Required)<br/>
 **--num_threads**: Number of threads to scrape (Required)<br/>
-**--debug**: Additional log output (Optional)<br/>
+**--debug**: Additional log output (Optional / Case Insensitive)<br/>
 
 Example Usage:
 --------------
 * Scraping the first 5 threads of /pol/ <br/>
-  * **python 4chan_scraper.py --board_name 'pol' --num_threads 5** <br/>
+  * **python 4chan_scraper.py --board_name 'pol' --num_threads 5 --debug 'false'**  <br/>
+  
+For additional information on usage, run **python 4chan_scraper.py -h** to check options.
 
 Runtime:
 -------
