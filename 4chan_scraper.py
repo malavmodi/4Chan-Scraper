@@ -8,6 +8,7 @@ import basc_py4chan
 import argparse
 import shutil
 import timeit
+import tqdm
 import json
 import csv 
 import os
@@ -43,7 +44,7 @@ def download_file(post, url, path):
     try:
         urllib.request.urlretrieve(post.file_url, path)
     except Exception as e:
-        if args.debug:
+        if args.debug == 'True' or args.debug == 'true':
             print(f"Error downloading {post.filename}.\n")
 
 def write_file_data(post, filepath): 
@@ -70,7 +71,7 @@ def download_json_thread(local_filename, url):
             json_file.write(json.dumps(thread_json_data, sort_keys = False, indent = 4, separators=(',', ': ')))
             json_file.close()
         except Exception as e:
-            if args.debug:
+            if args.debug == 'True' or args.debug == 'true':
                 print(f'Error downloading {local_filename}.\n')
 
 def mkdir(path, mode):
@@ -79,23 +80,23 @@ def mkdir(path, mode):
         if not(os.path.exists(path)):
             os.mkdir(path, mode)
         else:
-            if args.debug:
+            if args.debug == 'True' or args.debug == 'true':
                 print(f'"{path}" already created.')
     except Exception as e:
-        if args.debug:
+        if args.debug == 'True' or args.debug == 'true':
             print(f'Failed to create directory {path}.\n')
 
 def archive_data(board_name, board_name_dir):
     """Compress data to .zip and remove original folder"""
     try:
-        if args.debug:
+        if args.debug == 'True' or args.debug == 'true':
             print('\nCompressing Data...')
         shutil.make_archive(f'{board.name} - {datetime.now().strftime("%b-%d-%Y  %H-%M-%S")}', 'zip', f'{board_name_dir}')
         shutil.rmtree(f'{board_name_dir}')
-        if args.debug:
+        if args.debug == 'True' or args.debug == 'true':
             print('Data compressed!')
     except Exception as e:
-        if args.debug:
+        if args.debug == 'True' or args.debug == 'true':
             print('Error compressing data.\n')
 
 def write_comments_csv(post, filepath):
@@ -109,6 +110,7 @@ def write_comments_csv(post, filepath):
         '(REPLY) ' + comment if ">>" in comment and not(post.is_op) else comment, post.name.encode('utf-8').decode('utf-8') if post.name != None else 'No Name', 
         post.is_op, post.semantic_url])
     f.close() 
+
                          
 #TODO: 
     # Multithread --> not too important rn
@@ -120,7 +122,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--board_name", type = str, help = "4Chan Board Name", required = True, default = 'pol')
     parser.add_argument("--num_threads", type = int, help = "Number of threads to scrape on 4Chan Board", required = True, default = 10)
-    parser.add_argument("--debug", type = bool, help = "Turn debugging on", required = False, default = False)
+    parser.add_argument('--feature', dest='feature', action='store_true')
+    parser.add_argument('--no-feature', dest='feature', action='store_false')
+    parser.add_argument("--debug", type = str, help = "Turn debugging on", required = False, default = 'False', choices = ['True', 'False', 'true', 'false'])
     args = parser.parse_args()
 
     #Get Board Information and Begin Scrape
@@ -139,8 +143,8 @@ if __name__ == "__main__":
     
         print('Processing...\n')
 
-        if args.debug:
-            print('Subject Names Scraped:\n', '-------------------------')
+        if args.debug == 'True' or args.debug == 'true':
+            print('Subject Names Scraped:\n-------------------------')
 
         #Start runtime execution timer
         start = timeit.default_timer()
@@ -151,14 +155,14 @@ if __name__ == "__main__":
         #Check if a given thread is not 404'd
         if board.thread_exists:
             #Loop for each thread in the thread ID list
-            for thread_id in all_thread_ids[0: args.num_threads]:       
+            for thread_id in tqdm.tqdm(all_thread_ids[0: args.num_threads], desc = 'Scraping Progress'):
                 thread = board.get_thread(thread_id)
 
                 #Defining additional file structure paths
                 if thread.posts != None:
                     subject = thread.posts[0].subject
-                    if args.debug:
-                        print(subject if subject != None else 'No Subject')
+                    if args.debug == 'True' or args.debug == 'true':
+                        print("\n\n" + subject if subject != None else '\n\nNo Subject')
                     if subject != None:
                         thread_id_dir = f'{board.name}/{thread_id} - {make_safe_filename(subject)}'
                     else:
